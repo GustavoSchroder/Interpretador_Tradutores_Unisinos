@@ -18,7 +18,7 @@ public class Interpretador {
         try {
             s.realizaInterpretacao();
         } catch (IOException ex) {
-            Logger.getLogger(Interpretador.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
     }
     

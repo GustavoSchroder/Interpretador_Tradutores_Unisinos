@@ -19,11 +19,13 @@ public class Sistema {
     private Long id;
     private Map<String, String> palavrasReservadas;
     private List<String> numeros;
+    private Map<String, String> idsUtilizados;
 
     public Sistema() {
         this.id = 1L;
         palavras();
         numeros();
+        this.idsUtilizados = new HashMap<>();
     }
 
     private void numeros() {
@@ -68,16 +70,22 @@ public class Sistema {
         }
 
         String linha;
-        char before = '-';
-        char after = '-';
+        Character before = '-';
+        Character after = '-';
         String aux = "";
         Integer cont = 1;
-        while (null != (linha = in.readLine())) {
+        linha = in.readLine();
+        while (null != linha) {
+            if (linha.trim().equalsIgnoreCase("")) {
+                linha = in.readLine();
+                continue;
+            }
             String result = "";
-            linha = linha.replace("(", "").replace(")", "").replace(";", "");
+            linha = linha.replace("(", "").replace(")", "").replace(";", "").replace("{", "").replace("}", "");
             for (int i = 0; i < linha.length(); i++) {
                 aux += linha.charAt(i);
                 aux = aux.replace(" ", "");
+                aux = aux.trim();
 
                 try {
                     before = linha.charAt(i - 1);
@@ -94,11 +102,20 @@ public class Sistema {
                 if (aux.equalsIgnoreCase("/") && after == '/') {
                     break;
                 } else if (aux.equalsIgnoreCase("/") && after == '*') {
-
+                    Integer auxCont = i + 1;
+                    while (!aux.contains("*/")) {
+                        try {
+                            aux += linha.charAt(auxCont++);
+                        } catch (IndexOutOfBoundsException e) {
+                            linha = in.readLine();
+                        }
+                    }
+                    aux = "";
+                    i = auxCont;
                 } else if (aux.equalsIgnoreCase("=") && after != '=') {
                     result += ("[Equal_Op, =]");
                     aux = "";
-                } else if (null != verificaPalavraReservada(aux)) {
+                } else if (null != verificaPalavraReservada(aux) && after != 'u') {
                     result += verificaPalavraReservada(aux);
                     aux = "";
                 } else if (null != this.palavrasReservadas.get(aux)) {
@@ -106,10 +123,11 @@ public class Sistema {
                     aux = "";
                 } else if (isNumber(aux)) {
                     String auxN = aux;
-                    if (isNumber(after + "")) {
-                        Integer contAux = i;
+                    if (after == '.' || isNumber(after.toString())) {
+                        auxN += after;
+                        Integer contAux = i + 1;
                         try {
-                            while (isNumber(linha.charAt(++contAux) + "")) {
+                            while (isNumber(linha.charAt(++contAux) + "") || linha.charAt(contAux) == '.') {
                                 auxN += linha.charAt(contAux);
                             }
                         } catch (java.lang.StringIndexOutOfBoundsException e) {
@@ -120,12 +138,31 @@ public class Sistema {
 
                     aux = "";
                 } else if (!verificaAuxIsSpecial(aux) && after == ' ' && !aux.trim().equalsIgnoreCase("")) {
-                    result += "[ID, " + cont++ + "]";
+                    if (null == this.idsUtilizados.get(aux)) {
+                        result += "[ID, " + cont + "]";
+                        this.idsUtilizados.put(aux, "[ID, " + cont + "]");
+                        cont++;
+                    } else {
+                        result += this.idsUtilizados.get(aux);
+                    }
+                    aux = "";
+                } else if (aux.equalsIgnoreCase("\"")) {
+                    aux += linha.charAt(++i);
+                    while (!aux.equalsIgnoreCase("\"")) {
+                        try {
+                            aux += linha.charAt(++i);
+                        } catch (IndexOutOfBoundsException e) {
+                            break;
+                        }
+                    }
+                    result += "[String, " + aux.replace("\"", "") + "]";
                     aux = "";
                 }
             }
-            System.out.println(result);
-            result = "";
+            if (!result.trim().equalsIgnoreCase("")) {
+                System.out.println(result);
+            }
+            linha = in.readLine();
         }
     }
 
@@ -148,18 +185,21 @@ public class Sistema {
     }
 
     private String verificaPalavraReservada(String aux) {
+        aux = aux.trim();
         if (aux.equalsIgnoreCase("if")) {
             return "[reserved_word, if] ";
         } else if (aux.equalsIgnoreCase("else")) {
             return "[reserved_word, else] ";
+        } else if (aux.equalsIgnoreCase("double")) {
+            return "[reserved_word, double] ";
         } else if (aux.equalsIgnoreCase("do")) {
             return "[reserved_word, do] ";
         } else if (aux.equalsIgnoreCase("while")) {
             return "[reserved_word, while] ";
         } else if (aux.equalsIgnoreCase("for")) {
             return "[reserved_word, for] ";
-        } else if (aux.equalsIgnoreCase("print")) {
-            return "[reserved_word, print] ";
+        } else if (aux.equalsIgnoreCase("printf")) {
+            return "[reserved_word, printf] ";
         } else if (aux.equalsIgnoreCase("return")) {
             return "[reserved_word, return] ";
         } else if (aux.equalsIgnoreCase("int")) {
@@ -168,12 +208,13 @@ public class Sistema {
             return "[reserved_word, null] ";
         } else if (aux.equalsIgnoreCase("float")) {
             return "[reserved_word, float] ";
-        } else if (aux.equalsIgnoreCase("double")) {
-            return "[reserved_word, double] ";
         } else if (aux.equalsIgnoreCase("string")) {
             return "[reserved_word, string] ";
         } else if (aux.equalsIgnoreCase("bool")) {
             return "[reserved_word, bool] ";
+        } else if (aux.equalsIgnoreCase("true")
+                || aux.equalsIgnoreCase("false")) {
+            return "[logic, " + aux + "] ";
         } else {
             return null;
         }
@@ -185,5 +226,29 @@ public class Sistema {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Map<String, String> getPalavrasReservadas() {
+        return palavrasReservadas;
+    }
+
+    public void setPalavrasReservadas(Map<String, String> palavrasReservadas) {
+        this.palavrasReservadas = palavrasReservadas;
+    }
+
+    public List<String> getNumeros() {
+        return numeros;
+    }
+
+    public void setNumeros(List<String> numeros) {
+        this.numeros = numeros;
+    }
+
+    public Map<String, String> getIdsUtilizados() {
+        return idsUtilizados;
+    }
+
+    public void setIdsUtilizados(Map<String, String> idsUtilizados) {
+        this.idsUtilizados = idsUtilizados;
     }
 }
