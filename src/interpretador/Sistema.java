@@ -100,13 +100,15 @@ public class Sistema {
                 }
 
                 if (aux.equalsIgnoreCase("/") && after == '/') {
+                    aux = "";
                     break;
                 } else if (aux.equalsIgnoreCase("/") && after == '*') {
                     Integer auxCont = i + 1;
                     while (!aux.contains("*/")) {
                         try {
                             aux += linha.charAt(auxCont++);
-                        } catch (IndexOutOfBoundsException e) {
+                        } catch (IndexOutOfBoundsException | java.lang.NullPointerException e) {
+                            auxCont = 0;
                             linha = in.readLine();
                         }
                     }
